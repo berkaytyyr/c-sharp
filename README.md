@@ -24,13 +24,7 @@ Bu proje, Windows Forms kullanılarak C# ile geliştirilmiş basit bir banka sim
 - **UI**: Windows Forms
 - **IDE**: Visual Studio
   
-.
-.
-.
-.
-.
-.
-.
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Alışveriş Uygulaması 🛒
 
 Bu proje, Windows Forms kullanılarak C# ile geliştirilmiş bir market alışveriş uygulamasıdır. Kullanıcılar çeşitli ürünleri sepete ekleyebilir, toplam tutarı hesaplayabilir ve alışveriş işlemlerini gerçekleştirebilir.
