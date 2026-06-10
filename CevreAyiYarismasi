@@ -1,0 +1,150 @@
+#  Çevre Ayı Bilgi Yarışması
+
+C# Windows Forms ile geliştirilmiş, SQL veritabanı destekli, çok kullanıcılı bilgi yarışması masaüstü uygulaması.
+
+---
+
+##  Genel Bakış
+
+Personele yönelik çevre farkındalığı temalı bilgi yarışması uygulamasıdır. 
+Sicil numarasıyla giriş yapan kullanıcılar üç zorluk seviyesinde sorularla karşılaşır.
+Her oturum SQL veritabanına kaydedilir; günlük giriş limiti, ödül takibi ve admin yönetimi tamamen otomatik olarak işlenir.
+
+---
+
+##  Dosya Yapısı
+
+```
+ÇevreAyiYarismasi/
+├── Forms/
+│   ├── FormGiris.cs          # Giriş ekranı
+│   ├── FormYarisma.cs        # Ana yarışma ekranı (soru ızgarası)
+│   ├── FormSoru.cs           # Soru ve şıklar ekranı
+│   ├── FormSonuc.cs          # Sonuç ve puan ekranı
+│   └── FormAdmin.cs          # Admin yönetim paneli
+├── Database/
+│   └── db_helper.cs          # SQL bağlantı ve sorgu yönetimi
+├── Models/
+│   ├── Soru.cs
+│   └── Personel.cs
+├── Assets/
+│   └── images/               # Fotoğraflı sorular için görseller
+├── ÇevreAyiYarismasi.sln
+```
+
+---
+
+##  Özellikler
+
+###  Giriş Sistemi
+- Sicil numarasıyla kimlik doğrulama
+- SQL veritabanında 4679 kayıtlı personel
+- **Günlük giriş limiti:** Aynı sicil ile günde yalnızca 1 katılım
+- **Ödül kazananlar tekrar giremez** — ödül durumu veritabanından kontrol edilir
+- Giriş denendiğinde tüm kontroller anlık olarak SQL'den sorgulanır
+
+###  Yarışma Ekranı
+- Sorular ızgara düzeninde kutucuklar halinde görüntülenir
+- Zorluk seviyesine göre renk kodlaması
+- Her oturum için sorular rastgele seçilir ve sıralanır
+- Tamamlanan kutucuklar kapalı olarak işaretlenir
+
+###  Soru Ekranı
+- 3 zorluk seviyesi: **Kolay (60)**, **Orta (45)**, **Zor (18)** — toplam **123 soru**
+- **9 adet fotoğraflı soru** — görsel veritabanında `[Foto: N]` etiketiyle tutulur, ekranda temizlenmiş metin gösterilir
+- Her sorunun belirli süresi var — süre çubuğu ve sayaç ile görsel geri bildirim
+- Süre dolduğunda soru otomatik kapanır, yanlış olarak kaydedilir
+- Cevap seçildiğinde değişiklik yapılamaz
+- Doğru/yanlış anlık renk geri bildirimi (yeşil/kırmızı)
+
+###  Sonuç Ekranı
+- Doğru, yanlış ve boş soru sayısı ayrı ayrı gösterilir
+- Zorluk seviyesine göre ağırlıklı puan hesabı
+- Puan eşiği aşıldığında kutlama animasyonu
+- Ödül kazanan kullanıcı veritabanında işaretlenir → bir daha giriş yapamaz
+
+###  Admin Paneli
+Gizli erişim — kullanıcı arayüzünde görünmez, yalnızca yetkili giriş ile açılır.
+
+**Soru Yönetimi:**
+- SQL'deki soru tablosuna doğrudan bağlı CRUD arayüzü
+- Soru ekleme, düzenleme, silme
+- Zorluk seviyesi, şıklar, doğru cevap, fotoğraf referansı yönetimi
+
+**Personel Yönetimi:**
+- Sicil bazlı sorgulama
+- Kayıt ekleme / güncelleme
+- Ödül durumu görüntüleme ve sıfırlama
+
+**Raporlama:**
+- Kişi, departman veya tarih bazlı sonuç sorgulama
+- Doğru/yanlış dağılımı, en çok yanlış yapılan sorular
+- CSV olarak dışa aktarma
+
+**Yarışma Ayarları:**
+- Soru süresi, puan eşiği, ödül koşulları — kod değişikliğine gerek kalmadan panel üzerinden ayarlanır
+
+---
+
+##  Veritabanı Yapısı
+
+```sql
+-- Personel tablosu
+CREATE TABLE Personel (
+    SicilNo     VARCHAR(20) PRIMARY KEY,
+    Ad          NVARCHAR(100),
+    Departman   NVARCHAR(100),
+    OdulKazandi BIT DEFAULT 0
+);
+
+-- Sorular tablosu
+CREATE TABLE Sorular (
+    Id          INT IDENTITY PRIMARY KEY,
+    Metin       NVARCHAR(MAX),
+    SikA        NVARCHAR(500),
+    SikB        NVARCHAR(500),
+    SikC        NVARCHAR(500),
+    SikD        NVARCHAR(500),
+    DogruCevap  CHAR(1),
+    Zorluk      INT,             -- 1: Kolay, 2: Orta, 3: Zor
+    FotoRef     NVARCHAR(50)     -- NULL veya "[Foto: N]"
+);
+
+-- Katılım kayıtları
+CREATE TABLE Katilimlar (
+    Id          INT IDENTITY PRIMARY KEY,
+    SicilNo     VARCHAR(20),
+    Tarih       DATE,
+    Puan        INT,
+    DogruSayisi INT,
+    YanlisSayisi INT,
+    KatilimZamani DATETIME DEFAULT GETDATE()
+);
+```
+
+
+
+### Gereksinimler
+
+- Visual Studio 2022
+- .NET 8 Windows Desktop Runtime
+- SQL Server veya SQL Server Express
+- NuGet: `System.Data.SqlClient`
+
+### Veritabanı Kurulumu
+
+1. SQL Server'da yeni bir veritabanı oluşturun: `CevreAyiYarismasi`
+2. `Database/schema.sql` dosyasını çalıştırın
+3. `db_helper.cs` içindeki bağlantı dizesini güncelleyin:
+
+
+
+##  Teknik Notlar
+
+- **Fotoğraflı sorular:** Veritabanında `[Foto: 13]` formatında tutulur. `FormSoru.cs` bu etiketi parse ederek ilgili görseli `Assets/images/` klasöründen yükler, metin temizlenmiş şekilde gösterilir
+- **Rastgele soru seçimi:** Her oturumda `ORDER BY NEWID()` ile SQL tarafında rastgele sıralanır
+- **Çift kayıt güvenliği:** Her cevap hem veritabanına hem CSV dosyasına eş zamanlı yazılır. DB sorunu durumunda CSV yedeğinden kurtarma yapılabilir
+- **Admin gizliliği:** Admin girişi standart UI'da görünmez; belirli bir tuş kombinasyonu ile açılır
+
+---
+
